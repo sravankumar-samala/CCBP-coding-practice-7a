@@ -89,6 +89,57 @@ app.get("/matches/:matchId/", async (req, res) => {
 });
 
 // /players/:playerId/matches - GET - list of all the matches of a player
+app.get("/players/:plrId/matches/", async (req, res) => {
+  try {
+    const playerId = req.params.plrId;
+    const query = `
+      SELECT match_details.match_id As matchId,
+      match_details.match,
+      match_details.year FROM
+      match_details JOIN player_match_score ON  match_details.match_id = player_match_score.match_id
+      WHERE player_match_score.player_id =${playerId};`;
+    const playerPromise = await db.all(query);
+    const player = playerPromise;
+    res.send(player);
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+// GET - list of players of a specific match - /matches/:matchId/players
+app.get("/matches/:matchId/players", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const query = `SELECT player_details.player_id AS playerId,
+                        player_details.player_name AS playerName
+                        FROM player_details JOIN player_match_score ON 
+                        player_details.player_id = player_match_score.player_id
+                        WHERE player_match_score.match_id = ${matchId};`;
+    const playerPromise = await db.all(query);
+    res.send(playerPromise);
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
+// GET - the statistics of the total score, fours, sixes of a specific player based on the player ID - /players/:playerId/playerScores
+app.get("/players/:Id/playerScores", async (req, res) => {
+  try {
+    const playerId = req.params.Id;
+    const query = `SELECT ${playerId} AS playerId,
+        player_details.player_name AS playerName,
+        SUM(score) AS totalScore,
+        SUM(fours) AS totalFours,
+        SUM(sixes) AS totalSixes
+        FROM player_details JOIN player_match_score ON 
+        player_details.player_id = player_match_score.player_id
+        WHERE player_details.player_id = ${playerId};`;
+    const player = await db.get(query);
+    res.send(player);
+  } catch (error) {
+    console.log(error.message);
+  }
+});
 
 // player_match_score##   match_details##     player_details##
 // player_match_id        match_id            player_id
